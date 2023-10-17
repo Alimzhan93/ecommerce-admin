@@ -29,7 +29,7 @@ export default function Products() {
           {products.map((product) => (
             <tr>
               <td>{product.title}</td>
-              <td>
+              <td key={product._id}>
                 <Link href={"/products/edit/" + product._id}>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
