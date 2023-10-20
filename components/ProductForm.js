@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Spinner from "./Spinner";
@@ -13,14 +13,23 @@ export default function ProductForm({
 }) {
   const [title, setTitle] = useState(existingTitle || "");
   const [description, setDescription] = useState(existingDescription || "");
+  const [category, setCategory] = useState("");
   const [images, setImages] = useState(existingImages || []);
   const [price, setPrice] = useState(existingPrice || "");
   const [goToProducts, setGoToProducts] = useState(false);
-  const [isUpLoading, setUpLoading] = useState(false)
+  const [isUpLoading, setUpLoading] = useState(false);
+  const [categories, setCategories] = useState([false]);
   const router = useRouter();
+
+  useEffect(() => {
+    axios.get("/api/categories").then((result) => {
+      setCategories(result.data);
+    });
+  }, []);
+
   async function saveProduct(ev) {
     ev.preventDefault();
-    const data = { title, description, price, images };
+    const data = { title, description, price, images, category };
     if (_id) {
       //update
       await axios.put("/api/products", { ...data, _id });
@@ -36,20 +45,20 @@ export default function ProductForm({
   async function uploadImages(ev) {
     const files = ev.target?.files;
     if (files?.length > 0) {
-      setUpLoading(true)
+      setUpLoading(true);
       const data = new FormData();
       for (const file of files) {
         data.append("file", file);
       }
       const res = await axios.post("/api/upload", data);
-      setImages(oldImages => {
+      setImages((oldImages) => {
         return [...oldImages, ...res.data.links];
       });
-      setUpLoading(false)
+      setUpLoading(false);
     }
   }
-  function uploadImagesOrder(images){
-   setImages(images);
+  function uploadImagesOrder(images) {
+    setImages(images);
   }
   return (
     <form onSubmit={saveProduct}>
@@ -60,19 +69,31 @@ export default function ProductForm({
         value={title}
         onChange={(ev) => setTitle(ev.target.value)}
       />
+      <label>Category</label>
+      <select value={category} onChange={(ev) => setCategory(ev.target.value)}>
+        <option value="">Uncategorized</option>
+        {categories.length > 0 &&
+          categories.map((c) => <option value={c._id}>{c.name}</option>)}
+      </select>
       <label>Photos</label>
       <div className="mb-2 flex flex-wrap gap-1">
-        <ReactSortable list={images} className="flex flex-wrap gap-1" setList={uploadImagesOrder}>
-        {!!images?.length &&
-          images.map((link) => (
-            <div key={link} className="h-24">
-              <img src={link} alt="" className="rounded-lg" />
-            </div>
-          ))}
+        <ReactSortable
+          list={images}
+          className="flex flex-wrap gap-1"
+          setList={uploadImagesOrder}
+        >
+          {!!images?.length &&
+            images.map((link) => (
+              <div key={link} className="h-24">
+                <img src={link} alt="" className="rounded-lg" />
+              </div>
+            ))}
         </ReactSortable>
-          {isUpLoading && (<div className="h-24 flex items-center">
-            <Spinner/>
-          </div>)}
+        {isUpLoading && (
+          <div className="h-24 flex items-center">
+            <Spinner />
+          </div>
+        )}
         <label className="w-24 h-24 cursor-pointer text-center flex items-center justify-center text-sm gap-1 text-gray-500 rounded-lg bg-gray-200">
           <svg
             xmlns="http://www.w3.org/2000/svg"

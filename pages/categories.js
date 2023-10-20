@@ -1,8 +1,12 @@
 import Layout from "@/components/Layout";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { withSwal } from "react-sweetalert2";
 
-export default function Categories() {
+
+
+function Categories({swal}) {
+  const [editedCategory, setEditedCategory] = useState(null);
   const [name, setName] = useState("");
   const [parentCategory, setParentCategory] = useState("");
   const [categories, setCategories] = useState([]);
@@ -16,15 +20,52 @@ export default function Categories() {
   }
   async function saveCategory(ev) {
     ev.preventDefault();
-    await axios.post("/api/categories", { name, parentCategory });
+    const data = { name, parentCategory };
+    if (editedCategory) {
+      data._id = editedCategory._id
+      await axios.put("/api/categories", data);
+      setEditedCategory(null)
+    } else {
+      await axios.post("/api/categories", data);
+    }
     setName("");
     fetchCategories();
+  }
+
+  function editCategory(category) {
+    setEditedCategory(category);
+    setName(category.name);
+    setParentCategory(category.parent?._id);
+  }
+  function deleteCategory(category){
+        swal.fire({
+          title: 'Are you sure?',
+          text: `Do you want to delete ${category.name}?`,
+          showCancelButton: true,
+          cancelButtonText: 'Cancel',
+          confirmButtonText: 'Yes, Delete!',
+          confirmButtonColor: '#d55',
+          reverseButtons: true,
+      }).then(async result => {
+          // when confirmed and promise resolved...
+          if(result.isConfirmed){
+            const {_id} = category
+           await axios.delete('/api/categories?_id='+ _id);
+           fetchCategories();
+          }
+      }).catch(error => {
+          // when promise rejected...
+      });
   }
 
   return (
     <Layout>
       <h1>Categories</h1>
-      <label>New categories name</label>
+      <label>
+        {editedCategory
+          ? `Edit category ${editedCategory.name}`
+          : "Create new category"}
+      </label>
       <form onSubmit={saveCategory} className="flex gap-1">
         <input
           className="mb-0"
@@ -52,6 +93,8 @@ export default function Categories() {
         <thead>
           <tr>
             <td>Category name</td>
+            <td>Parent category</td>
+            <td></td>
           </tr>
         </thead>
         <tbody>
@@ -59,6 +102,16 @@ export default function Categories() {
             categories.map((category) => (
               <tr>
                 <td>{category.name}</td>
+                <td>{category?.parent?.name}</td>
+                <td>
+                  <button
+                    onClick={() => editCategory(category)}
+                    className="btn-primary mr-1"
+                  >
+                    Edit
+                  </button>
+                  <button onClick={() => deleteCategory(category)} className="btn-primary">Delete</button>
+                </td>
               </tr>
             ))}
         </tbody>
@@ -66,3 +119,6 @@ export default function Categories() {
     </Layout>
   );
 }
+export default withSwal(({swal, ref})=>(
+  <Categories swal={swal}/>
+))
