@@ -1,12 +1,12 @@
 import { Product } from "@/models/Product";
 import { mongooseConnect } from "@/lib/mongoose";
-import {getServerSession} from "next-auth";
-import {isAdminRequest} from '@/pages/api/auth/[...nextauth]'
+import { getServerSession } from "next-auth";
+import { isAdminRequest } from "@/pages/api/auth/[...nextauth]";
 export default async function handler(req, res) {
   const { method } = req;
   //   mongoose.connect(clientPromise.url);
   await mongooseConnect();
-  await isAdminRequest(req,res)
+  await isAdminRequest(req, res);
   if (method === "GET") {
     if (req.query?.id) {
       res.json(await Product.findOne({ _id: req.query?.id }));
@@ -16,7 +16,8 @@ export default async function handler(req, res) {
   }
 
   if (method === "POST") {
-    const { title, description, price, images, category,properties } = req.body;
+    const { title, description, price, images, category, properties } =
+      req.body;
     const productDoc = await Product.create({
       title,
       description,
